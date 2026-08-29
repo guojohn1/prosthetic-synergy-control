@@ -10,43 +10,78 @@ Generated 2026-08-29 by make_report.py; every number below traces to data/proces
 
 ## S3 — decoder error, DB2 intact
 
-| subject | EMG ch | synergy err (deg) | direct err (deg) | mean-baseline (deg) | ground truth |
-|---|---|---|---|---|---|
-| DB2_S1_E2_A1 | 12 | 12.46 | 11.13 | 14.13 | glove |
-| DB2_S2_E2_A1 | 12 | 11.08 | 10.40 | 12.31 | glove |
-| DB2_S3_E2_A1 | 12 | 11.94 | 11.11 | 14.04 | glove |
+| subject | EMG ch | synergy fixed (deg) | **adaptive** (deg) | direct (deg) | mean-baseline (deg) | ground truth |
+|---|---|---|---|---|---|---|
+| DB2_S1 | 12 | 12.73 | **11.64** | 11.30 | 14.57 | glove |
+| DB2_S2 | 12 | 10.91 | **10.50** | 10.24 | 12.20 | glove |
+| DB2_S3 | 12 | 10.92 | **10.39** | 10.10 | 12.96 | glove |
 
 ## S5 — identical pipeline, DB3 amputees
 
-| subject | EMG ch | synergy err (deg) | direct err (deg) | mean-baseline (deg) | ground truth |
-|---|---|---|---|---|---|
-| DB3_S1_E2_A1 | 12 | 8.19 | 7.83 | 8.65 | db2_prototypes |
-| DB3_S2_E2_A1 | 12 | 8.20 | 7.90 | 8.41 | db2_prototypes |
-| DB3_S3_E2_A1 | 12 | 14.04 | 10.79 | 13.80 | glove |
+| subject | EMG ch | synergy fixed (deg) | **adaptive** (deg) | direct (deg) | mean-baseline (deg) | ground truth |
+|---|---|---|---|---|---|---|
+| DB3_S1 | 12 | 10.88 | **10.57** | 10.48 | 11.39 | db2_prototypes |
+| DB3_S2 | 12 | 8.35 | **8.06** | 7.97 | 8.90 | db2_prototypes |
+| DB3_S3 | 12 | 14.09 | **10.84** | 10.79 | 13.80 | glove |
 
-**Intact-to-amputee gap: 2.21 deg** (DB2 mean 11.83 deg -> DB3 mean 14.04 deg, synergy decoder).
+**Intact-to-amputee gap: 2.57 deg** (DB2 mean 11.52 deg -> DB3 14.09 deg, synergy decoder).
 
 ## S6 — clinical metadata (n=3: pairings, no fitted trend)
 
-- DB3 s1: 8.19 deg | remaining forearm 50% | DASH 1.67 | 13 y since amputation
-- DB3 s2: 8.20 deg | remaining forearm 70% | DASH 15.18 | 6 y since amputation
-- DB3 s3: 14.04 deg | remaining forearm 30% | DASH 22.5 | 5 y since amputation
+- DB3 s1: 10.88 deg | remaining forearm 50% | DASH 1.67 | 13 y since amputation
+- DB3 s2: 8.35 deg | remaining forearm 70% | DASH 15.18 | 6 y since amputation
+- DB3 s3: 14.09 deg | remaining forearm 30% | DASH 22.5 | 5 y since amputation
 
-## Calibration burden (subject DB2_S1_E2_A1; 1 gesture = one movement repetition)
+## What's-next, implemented: subject-adaptive basis refinement
+
+The frozen 2-PC intact basis is extended per subject with up to 4 residual components fit on that subject's own calibration postures (one extra component earned per ~3 gestures; still linear ridge, no NN). Calibration curves, 1 gesture = one movement repetition:
+
+**Intact (DB2 s1, LOSO basis)**
+
+| gestures | direct | synergy (fixed) | adaptive |
+|---|---|---|---|
+| 2 | 20.71 | 19.12 | 19.12 |
+| 4 | 18.99 | 17.21 | 17.99 |
+| 6 | 15.73 | 15.04 | 15.47 |
+| 10 | 15.26 | 14.69 | 15.05 |
+| 15 | 13.75 | 13.95 | 13.84 |
+| 25 | 12.51 | 13.29 | 12.68 |
+| 40 | 12.03 | 13.12 | 12.30 |
+| 60 | 11.54 | 12.83 | 11.83 |
+| 90 | 11.41 | 12.80 | 11.74 |
+| 120 | 11.31 | 12.73 | 11.65 |
+
+**Amputee (DB3 s3, glove truth, all-intact basis)**
+
+| gestures | direct | synergy (fixed) | adaptive |
+|---|---|---|---|
+| 2 | 14.79 | 15.68 | 15.68 |
+| 4 | 13.91 | 15.44 | 14.42 |
+| 6 | 14.18 | 15.97 | 14.47 |
+| 10 | 12.76 | 15.15 | 12.86 |
+| 15 | 12.83 | 15.01 | 12.92 |
+| 25 | 11.58 | 14.56 | 11.66 |
+| 40 | 11.06 | 14.16 | 11.13 |
+| 60 | 10.96 | 14.17 | 11.01 |
+| 90 | 10.77 | 14.06 | 10.81 |
+
+Reading: on the intact subject the fixed prior wins below ~10 gestures and caps the decoder above; adaptive keeps the low-data start and removes most of the ceiling. On the amputee the fixed intact prior never wins at any calibration size — its plane misfits the residual limb's postures — and the subject-adaptive refinement recovers decoder parity from ~10 gestures on. This is the brief's "reconstruct the fine synergies amputation destroys", measured.
+
+## Calibration burden (subject DB2_S1; 1 gesture = one movement repetition)
 
 | gestures | direct (deg) | synergy (deg) | synergy advantage |
 |---|---|---|---|
-| 2 | 27.28 | 22.40 | +17.9% |
-| 4 | 21.16 | 19.17 | +9.4% |
-| 6 | 15.89 | 15.27 | +3.9% |
-| 10 | 14.68 | 14.60 | +0.6% |
-| 15 | 13.61 | 13.86 | -1.8% |
-| 25 | 12.37 | 13.19 | -6.6% |
-| 40 | 11.74 | 12.81 | -9.2% |
-| 60 | 11.29 | 12.53 | -11.0% |
-| 90 | 11.14 | 12.47 | -11.9% |
+| 2 | 20.89 | 19.35 | +7.3% |
+| 4 | 18.83 | 16.81 | +10.7% |
+| 6 | 16.42 | 15.62 | +4.9% |
+| 10 | 14.96 | 14.53 | +2.8% |
+| 15 | 13.55 | 13.90 | -2.6% |
+| 25 | 12.60 | 13.38 | -6.1% |
+| 40 | 12.10 | 13.10 | -8.3% |
+| 60 | 11.63 | 12.86 | -10.6% |
+| 90 | 11.44 | 12.81 | -12.0% |
 
-Ridge lambda 0.01 chosen by train-set CV. The synergy decoder wins only in the low-calibration regime and is capped by the 2-PC reconstruction floor once data is plentiful — reported as found.
+Ridge lambda 1.0 chosen by train-set CV. The synergy decoder wins only in the low-calibration regime and is capped by the 2-PC reconstruction floor once data is plentiful — reported as found.
 
 ## Success criteria
 
