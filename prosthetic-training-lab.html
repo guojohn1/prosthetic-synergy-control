@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Standalone wrapper. The hosted artifact is served as a fragment because the
+     artifact runtime supplies the document skeleton; a file opened from disk
+     needs its own. Everything below this block is the artifact source verbatim. -->
+<style>
+  :root{color-scheme:light dark}
+  [hidden]{display:none!important}
+</style>
+<title>Prosthetic Training Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f2f5f7; --panel:#ffffff; --panel2:#e9eef2; --ink:#131a20; --muted:#5a6873;
+  --line:#d3dbe1; --accent:#0d7c8a; --accent-soft:#d8eef1;
+  --pre:#b06a1f; --pre-soft:#f6e8d6;
+  --good:#2c7a4d; --bad:#a93c2d; --grid:#e0e7ec; --shadow:0 1px 2px rgba(16,32,44,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b1015; --panel:#131a21; --panel2:#19222a; --ink:#d3dde5; --muted:#84939f;
+    --line:#25303a; --accent:#3fb9c9; --accent-soft:#123039;
+    --pre:#d99a52; --pre-soft:#33261a;
+    --good:#5cbf7e; --bad:#e2735f; --grid:#1d262f; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b1015; --panel:#131a21; --panel2:#19222a; --ink:#d3dde5; --muted:#84939f;
+  --line:#25303a; --accent:#3fb9c9; --accent-soft:#123039;
+  --pre:#d99a52; --pre-soft:#33261a;
+  --good:#5cbf7e; --bad:#e2735f; --grid:#1d262f; --shadow:none;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 "IBM Plex Sans",-apple-system,"Segoe UI",Arial,sans-serif;padding:24px 16px 90px}
+.wrap{max-width:1060px;margin:0 auto}
+.mono,.num{font-family:"IBM Plex Mono",Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+  border-bottom:2px solid var(--accent);padding-bottom:14px;margin-bottom:20px}
+.eyebrow{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em;margin-top:4px;text-wrap:balance}
+.tagline{color:var(--muted);font-size:13px;max-width:52ch}
+.badge{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:5px 10px;background:var(--panel)}
+.badge b{color:var(--accent);font-family:"IBM Plex Mono",monospace}
+
+/* stepper */
+nav.steps{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}
+nav.steps button{flex:1;min-width:200px;text-align:left;background:var(--panel);color:var(--ink);
+  border:1px solid var(--line);padding:11px 14px;cursor:pointer;font:inherit;box-shadow:var(--shadow);
+  display:flex;gap:11px;align-items:center;transition:border-color .15s,background .15s}
+nav.steps button:hover:not(:disabled){border-color:var(--accent)}
+nav.steps button[aria-current="true"]{border-color:var(--accent);background:var(--accent-soft)}
+nav.steps button:disabled{opacity:.45;cursor:not-allowed}
+nav.steps button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stepn{width:24px;height:24px;flex:none;border-radius:50%;background:var(--panel2);color:var(--muted);
+  display:grid;place-items:center;font:600 12px "IBM Plex Mono",monospace;border:1px solid var(--line)}
+button[aria-current="true"] .stepn{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stept{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);display:block}
+.stepl{font-size:14px;font-weight:600}
+
+section[hidden]{display:none!important}
+.panel{background:var(--panel);border:1px solid var(--line);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:16px}
+h2{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+p.lead{color:var(--muted);font-size:13.5px;margin-bottom:14px;max-width:70ch}
+
+/* device cards */
+.devgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px}
+.dev{background:var(--panel);border:1px solid var(--line);padding:0;cursor:pointer;text-align:left;
+  font:inherit;color:var(--ink);display:flex;flex-direction:column;transition:border-color .15s,transform .15s}
+.dev:hover{border-color:var(--accent);transform:translateY(-1px)}
+.dev[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.dev:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dev canvas{width:100%;height:132px;display:block;background:var(--panel2);border-bottom:1px solid var(--line)}
+.devbody{padding:12px 14px 14px}
+.devname{font-weight:600;font-size:15px}
+.devsub{font-size:12px;color:var(--muted);margin-top:2px}
+.devmeta{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+.devmeta span{background:var(--panel2);border:1px solid var(--line);padding:1px 7px}
+.dev[aria-pressed="true"] .devname::after{content:" \2713";color:var(--accent)}
+
+/* training */
+.trainwrap{display:grid;grid-template-columns:minmax(280px,1fr) minmax(300px,1.15fr);gap:16px}
+.stage{background:var(--panel2);border:1px solid var(--line);position:relative}
+.stage canvas{width:100%;height:290px;display:block}
+.stagetag{position:absolute;top:8px;left:10px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stagetag b{color:var(--accent)}
+.ctrls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.btn{background:var(--accent);color:#fff;border:1px solid var(--accent);padding:9px 18px;font:600 14px "IBM Plex Sans",sans-serif;cursor:pointer}
+.btn:hover:not(:disabled){filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.bar{height:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;margin-bottom:12px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .1s linear}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(98px,1fr));gap:9px;margin-bottom:12px}
+.kpi{background:var(--panel2);border:1px solid var(--line);padding:9px 11px}
+.kpi b{display:block;font:600 19px "IBM Plex Mono",monospace;color:var(--accent)}
+.kpi span{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.kpi.warm b{color:var(--pre)}
+canvas.chart{width:100%;height:150px;display:block;background:var(--panel2);border:1px solid var(--line)}
+.taskrow{display:flex;align-items:center;gap:9px;margin-top:7px;font-size:12px}
+.taskrow .tn{width:118px;flex:none;color:var(--muted)}
+.tbar{flex:1;height:14px;background:var(--panel2);border:1px solid var(--line);position:relative;overflow:hidden}
+.tbar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);width:0;transition:width .12s}
+.tbar i.pre{background:var(--pre)}
+.taskrow .tv{width:62px;text-align:right;font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.log{height:104px;overflow:auto;background:var(--panel2);border:1px solid var(--line);padding:8px 10px;
+  font:11.5px/1.5 "IBM Plex Mono",monospace;color:var(--muted);margin-top:12px}
+.log b{color:var(--ink);font-weight:500}
+
+/* test drive */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.duo .stage canvas{height:250px}
+.duo .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.duo h3{font-size:13px;font-weight:600}
+.duo h3.pre{color:var(--pre)} .duo h3.post{color:var(--accent)}
+.duo .tagn{font:600 13px "IBM Plex Mono",monospace}
+.readout{display:flex;gap:14px;margin-top:8px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+.readout b{font-family:"IBM Plex Mono",monospace;font-size:14px;color:var(--ink);display:block}
+.inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-bottom:16px}
+.sl label{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.sl label b{font-family:"IBM Plex Mono",monospace;color:var(--ink);letter-spacing:0}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);margin-top:10px}
+.verdict{margin-top:14px;padding:13px 16px;border:1px solid var(--line);background:var(--panel2);font-size:14px}
+.verdict b{color:var(--accent);font-family:"IBM Plex Mono",monospace}
+.note{font-size:11.5px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+.rowbtns{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+@media (max-width:800px){.trainwrap,.duo{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">Interactive MVP &middot; reinforcement learning in the browser</div>
+    <h1>Prosthetic Training Lab</h1>
+    <div class="tagline">Pick a device, watch a controller actually learn to drive it, then take
+    the before and after versions for a test drive yourself.</div>
+  </div>
+  <div class="badge">policy search runs live &middot; <b id="hdrDev">no device</b></div>
+</header>
+
+<nav class="steps" aria-label="Progress">
+  <button id="nav1" aria-current="true" onclick="LAB.go(1)">
+    <span class="stepn">1</span><span><span class="stept">Slice one</span><span class="stepl">Choose your device</span></span></button>
+  <button id="nav2" disabled onclick="LAB.go(2)">
+    <span class="stepn">2</span><span><span class="stept">Slice two</span><span class="stepl">Train the controller</span></span></button>
+  <button id="nav3" disabled onclick="LAB.go(3)">
+    <span class="stepn">3</span><span><span class="stept">Slice three</span><span class="stepl">Drive it yourself</span></span></button>
+</nav>
+
+<!-- ================= SLICE 1 ================= -->
+<section id="s1">
+  <div class="panel">
+    <h2>Step 1 &middot; You are the patient</h2>
+    <p class="lead">You have residual muscle signals above the missing limb. Choose the prosthesis
+    you want fitted &mdash; each one is a different control problem, with its own joints, physics
+    and success criteria. The little previews are live simulations, not pictures.</p>
+    <div class="devgrid" id="devGrid"></div>
+    <div class="rowbtns">
+      <button class="btn" id="toTrain" disabled onclick="LAB.go(2)">Fit this device &rarr;</button>
+      <button class="btn ghost" onclick="LAB.pickRandom()">Surprise me</button>
+    </div>
+    <div class="note">Every device below is a real simulated mechanism: joint limits, inertia,
+    damping and passive stiffness are integrated at 20&nbsp;Hz. Your muscle signals are simulated
+    too &mdash; this is a control-architecture sandbox, not a medical device.</div>
+  </div>
+</section>
+
+<!-- ================= SLICE 2 ================= -->
+<section id="s2" hidden>
+  <div class="panel">
+    <h2>Step 2 &middot; Train the controller</h2>
+    <p class="lead" id="trainLead"></p>
+    <div class="ctrls">
+      <button class="btn" id="btnTrain" onclick="LAB.toggleTrain()">Start training</button>
+      <button class="btn ghost" id="btnReset" onclick="LAB.resetTraining()">Reset</button>
+      <span class="hint" id="trainStatus" role="status" aria-live="polite">Untrained controller loaded.</span>
+    </div>
+    <div class="bar"><i id="trainBar"></i></div>
+    <div class="trainwrap">
+      <div>
+        <div class="stage">
+          <div class="stagetag">live rollout &middot; <b id="liveTag">untrained policy</b></div>
+          <canvas id="trainCanvas"></canvas>
+        </div>
+        <div class="kpis" style="margin-top:10px">
+          <div class="kpi warm"><b id="kBase">&ndash;</b><span id="kBaseL">baseline error</span></div>
+          <div class="kpi"><b id="kNow">&ndash;</b><span id="kNowL">current error</span></div>
+          <div class="kpi"><b id="kGen">0</b><span>generation</span></div>
+          <div class="kpi"><b id="kImp">0%</b><span>improvement</span></div>
+        </div>
+      </div>
+      <div>
+        <canvas class="chart" id="chart"></canvas>
+        <div style="margin-top:12px">
+          <h2 style="margin-bottom:4px">Test battery &mdash; scored every generation</h2>
+          <div id="taskBars"></div>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+    <div class="rowbtns">
+      <button class="btn" id="toTest" disabled onclick="LAB.go(3)">Take it for a test drive &rarr;</button>
+      <button class="btn ghost" onclick="LAB.go(1)">&larr; Different device</button>
+    </div>
+    <div class="note" id="algoNote"></div>
+  </div>
+</section>
+
+<!-- ================= SLICE 3 ================= -->
+<section id="s3" hidden>
+  <div class="panel">
+    <h2>Step 3 &middot; Drive it yourself</h2>
+    <p class="lead" id="testLead"></p>
+    <div class="inputs" id="testInputs"></div>
+    <div class="duo">
+      <div>
+        <div class="head"><h3 class="pre">Before training</h3><span class="tagn" id="preScore">&ndash;</span></div>
+        <div class="stage"><div class="stagetag">untrained controller</div><canvas id="preCanvas"></canvas></div>
+        <div class="readout">
+          <div><b id="preErr">&ndash;</b>live error</div>
+          <div><b id="preHit">&ndash;</b>on target</div>
+        </div>
+      </div>
+      <div>
+        <div class="head"><h3 class="post">After training</h3><span class="tagn" id="postScore">&ndash;</span></div>
+        <div class="stage"><div class="stagetag">trained controller</div><canvas id="postCanvas"></canvas></div>
+        <div class="readout">
+          <div><b id="postErr">&ndash;</b>live error</div>
+          <div><b id="postHit">&ndash;</b>on target</div>
+        </div>
+      </div>
+    </div>
+    <div class="verdict" id="verdict">Move the controls above &mdash; both hands receive the identical command stream.</div>
+    <div class="rowbtns">
+      <button class="btn ghost" onclick="LAB.resetScore()">Reset scoreboard</button>
+      <button class="btn ghost" onclick="LAB.go(2)">&larr; Back to training</button>
+      <button class="btn ghost" onclick="LAB.go(1)">Try another device</button>
+    </div>
+    <div class="note">Both panels are the same simulated device receiving the same intent signal at
+    the same instant. The only difference is the controller: a randomly initialised one on the left,
+    the one you just trained on the right.</div>
+  </div>
+</section>
+</div>
+
+<script>
+"use strict";
+var LAB=(function(){
+const $=function(id){return document.getElementById(id);};
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const DT=0.05, EP=120;
+const DEG=180/Math.PI;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function hash(i,s){const x=Math.sin(i*127.1+s*311.7)*43758.5453;return x-Math.floor(x);}
+
+/* ---------- generic mechanism ---------- */
+function makeState(d){return {q:d.rest.slice(),qd:new Array(d.n).fill(0),t:0};}
+function stepSim(d,st,a){
+  for(let i=0;i<d.n;i++){
+    const tau=clamp(a[i],-1,1)*d.gain[i];
+    const qdd=(tau-d.damping[i]*st.qd[i]-d.stiff[i]*(st.q[i]-d.rest[i]))/d.inertia[i];
+    st.qd[i]+=qdd*DT; st.q[i]+=st.qd[i]*DT;
+    const L=d.limits[i];
+    if(st.q[i]<L[0]){st.q[i]=L[0];st.qd[i]*=-0.2;}
+    if(st.q[i]>L[1]){st.q[i]=L[1];st.qd[i]*=-0.2;}
+  }
+  st.t+=DT;
+}
+function act(W,o,n){
+  const nIn=o.length+1,a=new Array(n);
+  for(let j=0;j<n;j++){let s=0;const off=j*nIn;
+    for(let i=0;i<o.length;i++)s+=W[off+i]*o[i];
+    a[j]=Math.tanh(s+W[off+o.length]);}
+  return a;
+}
+function rollout(d,W,task,steps){
+  const st=makeState(d);let R=0,E=0;
+  for(let k=0;k<steps;k++){
+    const tg=d.target(task,st.t),o=d.obs(d,st,tg),a=act(W,o,d.n);
+    R+=d.reward(d,st,tg,a); E+=d.metric(d,st,tg);
+    stepSim(d,st,a);
+  }
+  return {R:R/steps,E:E/steps};
+}
+
+/* ---------- drawing helpers ---------- */
+function css(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+function fit(c){const r=c.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+  if(c.width!==Math.round(r.width*dpr)||c.height!==Math.round(r.height*dpr)){
+    c.width=Math.round(r.width*dpr);c.height=Math.round(r.height*dpr);}
+  const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);return {x:x,w:r.width,h:r.height};}
+function limb(x,ax,ay,bx,by,w,col){x.lineCap="round";x.lineWidth=w;x.strokeStyle=col;
+  x.beginPath();x.moveTo(ax,ay);x.lineTo(bx,by);x.stroke();}
+function dot(x,cx,cy,r,col){x.fillStyle=col;x.beginPath();x.arc(cx,cy,r,0,6.2832);x.fill();}
+
+/* ---------- mechanical rendering kit ----------
+   These devices should read as prosthetic hardware, not cartoon limbs:
+   anodised shells over a carbon chassis, visible joint pivots with axles,
+   socket rims, pylon clamps and a terminal device. Colour is derived from a
+   single accent so the "before" and "after" panels are unmistakably the SAME
+   machine under two different controllers. */
+const _cc={};
+function _px(c){c=c.trim();
+  if(c.charAt(0)==="#"){
+    if(c.length===4)return[parseInt(c[1]+c[1],16),parseInt(c[2]+c[2],16),parseInt(c[3]+c[3],16)];
+    return[parseInt(c.substr(1,2),16),parseInt(c.substr(3,2),16),parseInt(c.substr(5,2),16)];}
+  const m=c.match(/-?\d+\.?\d*/g);return[+m[0],+m[1],+m[2]];}
+function _mix(c,t,to){const k=c+"|"+t+"|"+to[0];if(_cc[k])return _cc[k];
+  const p=_px(c),r="rgb("+Math.round(p[0]+(to[0]-p[0])*t)+","+Math.round(p[1]+(to[1]-p[1])*t)+
+    ","+Math.round(p[2]+(to[2]-p[2])*t)+")";_cc[k]=r;return r;}
+function dk(c,t){return _mix(c,t,[0,0,0]);}
+function lt(c,t){return _mix(c,t,[255,255,255]);}
+function carbon(c){return _mix(c,.80,[26,31,37]);}
+function taper(x,L,r1,r2){x.moveTo(0,-r1);x.lineTo(L,-r2);
+  x.arc(L,0,r2,-1.5708,1.5708);x.lineTo(0,r1);x.arc(0,0,r1,1.5708,-1.5708);x.closePath();}
+/* tapered structural member: shell, edge, specular strip, optional fasteners */
+function seg(x,ax,ay,bx,by,w1,w2,col,opt){opt=opt||{};
+  const L=Math.hypot(bx-ax,by-ay)||1e-6,a=Math.atan2(by-ay,bx-ax),r1=w1/2,r2=w2/2;
+  x.save();x.translate(ax,ay);x.rotate(a);
+  x.beginPath();taper(x,L,r1,r2);
+  if(opt.outline){x.strokeStyle=col;x.lineWidth=1.25;x.stroke();x.restore();return;}
+  x.fillStyle=col;x.fill();
+  x.strokeStyle=dk(col,.55);x.lineWidth=1;x.stroke();
+  x.save();x.translate(0,-r1*.30);x.beginPath();taper(x,L*.90,r1*.30,r2*.30);
+  x.fillStyle=lt(col,.36);x.fill();x.restore();
+  if(opt.bolts&&L>16){x.fillStyle=dk(col,.45);
+    for(let i=0;i<2;i++){x.beginPath();
+      x.arc(L*(i?.74:.26),r1*.30,Math.max(.9,r1*.13),0,6.2832);x.fill();}}
+  x.restore();}
+/* joint pivot: housing, bearing race, axle */
+function pivot(x,cx,cy,r,col,opt){
+  if(opt&&opt.outline){x.strokeStyle=col;x.lineWidth=1.1;
+    x.beginPath();x.arc(cx,cy,r,0,6.2832);x.stroke();return;}
+  x.fillStyle=dk(col,.52);x.beginPath();x.arc(cx,cy,r,0,6.2832);x.fill();
+  x.fillStyle=lt(col,.16);x.beginPath();x.arc(cx,cy,r*.60,0,6.2832);x.fill();
+  x.fillStyle=dk(col,.70);x.beginPath();x.arc(cx,cy,r*.26,0,6.2832);x.fill();}
+/* moulded shell / socket / housing plate */
+function shell(x,cx,cy,w,h,ang,col,opt){opt=opt||{};
+  x.save();x.translate(cx,cy);if(ang)x.rotate(ang);
+  x.beginPath();
+  if(x.roundRect)x.roundRect(-w/2,-h/2,w,h,Math.min(w,h)*(opt.r||.24));
+  else x.rect(-w/2,-h/2,w,h);
+  if(opt.outline){x.strokeStyle=col;x.lineWidth=1.25;x.stroke();x.restore();return;}
+  x.fillStyle=col;x.fill();x.strokeStyle=dk(col,.55);x.lineWidth=1;x.stroke();
+  if(opt.hi){x.fillStyle=lt(col,.30);x.beginPath();
+    if(x.roundRect)x.roundRect(-w/2+w*.13,-h/2+h*.13,w*.26,h*.70,Math.min(w,h)*.13);
+    else x.rect(-w/2+w*.13,-h/2+h*.13,w*.26,h*.70);
+    x.fill();}
+  if(opt.rim){x.strokeStyle=dk(col,.30);x.lineWidth=1;
+    x.beginPath();x.moveTo(-w*.36,-h*.22);x.lineTo(w*.36,-h*.22);x.stroke();
+    x.beginPath();x.moveTo(-w*.36,h*.22);x.lineTo(w*.36,h*.22);x.stroke();}
+  x.restore();}
+/* multi-articulating hand, origin at the wrist coupling, digits toward -y */
+function mechHand(x,S,q,col,opt){
+  const out=!!(opt&&opt.outline),ch=carbon(col);
+  const pw=S*1.06,ph=S*.90,pyc=-S*.12,kn=pyc-ph/2;
+  /* chassis first: the digits articulate IN FRONT of the palm, so a closed
+     fist shows fingers folded over the cover instead of vanishing behind it */
+  shell(x,0,pyc+ph/2+S*.19,pw*.52,S*.30,0,out?col:ch,{outline:out,r:.34,rim:!out});
+  shell(x,0,pyc,pw,ph,0,out?col:ch,{outline:out,r:.22});
+  shell(x,S*.04,pyc+S*.02,pw*.68,ph*.64,0,col,{outline:out,r:.20,hi:!out});
+  shell(x,0,kn+S*.04,pw*.94,S*.19,0,out?col:dk(ch,.18),{outline:out,r:.5});
+  for(let i=0;i<4;i++){
+    const bx=-S*.40+i*S*.27,by=kn+S*.03;
+    const L1=S*(.66-Math.abs(i-1.35)*.05),L2=L1*.78;
+    const a1=-1.5708-q[i+1]*1.02,a2=a1-q[i+1]*.98;
+    const mx=bx+L1*Math.cos(a1),my=by+L1*Math.sin(a1);
+    const tx=mx+L2*Math.cos(a2),ty=my+L2*Math.sin(a2);
+    seg(x,bx,by,mx,my,S*.19,S*.155,col,{outline:out});
+    seg(x,mx,my,tx,ty,S*.155,S*.115,col,{outline:out});
+    pivot(x,bx,by,S*.10,col,{outline:out});
+    pivot(x,mx,my,S*.08,col,{outline:out});
+    if(!out){x.fillStyle=dk(col,.34);x.beginPath();x.arc(tx,ty,S*.058,0,6.2832);x.fill();}
+  }
+  const tb=-S*.52,tby=pyc+S*.14;
+  const ta1=3.1416+q[0]*.80,ta2=ta1+q[0]*.55;
+  const tmx=tb+S*.48*Math.cos(ta1),tmy=tby+S*.48*Math.sin(ta1);
+  const ttx=tmx+S*.36*Math.cos(ta2),tty=tmy+S*.36*Math.sin(ta2);
+  seg(x,tb,tby,tmx,tmy,S*.23,S*.185,col,{outline:out});
+  seg(x,tmx,tmy,ttx,tty,S*.185,S*.135,col,{outline:out});
+  pivot(x,tb,tby,S*.125,col,{outline:out});
+  pivot(x,tmx,tmy,S*.09,col,{outline:out});
+  if(!out){x.fillStyle=dk(col,.34);x.beginPath();x.arc(ttx,tty,S*.065,0,6.2832);x.fill();}
+}
+
+/* ================= DEVICE DEFINITIONS ================= */
+const DEVICES={
+
+leg:{
+  key:"leg",name:"Transfemoral leg",sub:"Above-knee amputation",
+  joints:"hip \u00b7 knee \u00b7 ankle",task:"Track a natural gait cycle",
+  n:3,limits:[[-.7,.95],[-1.7,.06],[-.6,.6]],rest:[0,-.25,0],
+  inertia:[1.05,.55,.22],damping:[.55,.38,.24],stiff:[1.3,1.1,1.6],gain:[8,7,4.5],
+  unit:"\u00b0",metricName:"gait tracking error",
+  tasks:[{f:.55,lbl:"slow walk"},{f:.75,lbl:"normal walk"},{f:1.0,lbl:"brisk walk"}],
+  obsDim:12,
+  target:function(t,tm){const p=6.2832*t.f*tm;
+    return {q:[.42*Math.sin(p),-.30-.62*Math.max(0,Math.sin(p+1.0)),.20*Math.sin(p+2.2)],p:p,f:t.f};},
+  obs:function(d,st,tg){const o=[];
+    for(let i=0;i<3;i++){o.push(st.q[i],st.qd[i]*.25,tg.q[i]-st.q[i]);}
+    o.push(Math.sin(tg.p),Math.cos(tg.p),tg.f-.75);return o;},
+  reward:function(d,st,tg,a){let e=0,u=0;
+    for(let i=0;i<3;i++){e+=Math.abs(tg.q[i]-st.q[i]);u+=a[i]*a[i];}
+    return -e/3*2.2-.02*u/3;},
+  metric:function(d,st,tg){let e=0;for(let i=0;i<3;i++)e+=Math.abs(tg.q[i]-st.q[i]);return e/3*DEG;},
+  draw:function(x,w,h,st,tg,o){
+    const mut=css("--muted"),ink=css("--ink"),line=css("--line"),acc=o.col;
+    const S=Math.min(h*.215,w*.28),hx=w*.5,hy=h*.25,ph=tg?tg.p:0;
+    const gy=hy+S*2+S*.46;
+    x.strokeStyle=line;x.lineWidth=1;x.beginPath();x.moveTo(0,gy);x.lineTo(w,gy);x.stroke();
+    const off=((ph*26)%34);
+    x.strokeStyle=css("--grid");
+    for(let i=-1;i<w/34+1;i++){x.beginPath();x.moveTo(i*34-off,gy);x.lineTo(i*34-off+9,gy+7);x.stroke();}
+    function leg(q,col,out){
+      const ch=carbon(col);
+      const a1=q[0],a2=q[0]+q[1],a3=a2+q[2]+1.5708;
+      const kx=hx+S*Math.sin(a1),ky=hy+S*Math.cos(a1);
+      const ax=kx+S*Math.sin(a2),ay=ky+S*Math.cos(a2);
+      /* thigh socket: wide carbon shell tapering into the knee unit */
+      seg(x,hx,hy,kx,ky,S*.40,S*.22,out?col:ch,{outline:out});
+      if(!out){x.save();x.translate(hx,hy);x.rotate(-a1);
+        x.strokeStyle=dk(ch,.28);x.lineWidth=1.2;
+        for(const t of [.26,.46]){x.beginPath();
+          x.moveTo(-S*.17,S*t);x.lineTo(S*.17,S*t);x.stroke();}
+        x.restore();}
+      /* polycentric knee: housing, pivot, posterior linkage */
+      if(!out){const mxk=(hx+kx)/2,myk=(hy+ky)/2;
+        seg(x,kx-Math.sin(a2)*S*.04,ky-Math.cos(a2)*S*.04,kx,ky,S*.30,S*.26,dk(ch,.10),{});}
+      shell(x,kx,ky,S*.34,S*.30,-a2,out?col:dk(ch,.05),{outline:out,r:.34});
+      pivot(x,kx,ky,S*.135,col,{outline:out});
+      /* pylon with clamp rings */
+      seg(x,kx,ky,ax,ay,S*.15,S*.125,col,{outline:out,bolts:!out});
+      if(!out)for(const t of [.34,.72]){
+        const px2=kx+(ax-kx)*t,py2=ky+(ay-ky)*t;
+        shell(x,px2,py2,S*.22,S*.09,-a2,dk(col,.30),{r:.4});}
+      pivot(x,ax,ay,S*.095,col,{outline:out});
+      /* carbon-fibre dynamic-response foot */
+      x.save();x.translate(ax,ay);x.rotate(1.5708-a3);
+      x.lineCap="round";x.lineJoin="round";
+      x.beginPath();x.moveTo(-S*.14,-S*.02);
+      x.quadraticCurveTo(S*.06,S*.26,S*.52,S*.30);
+      x.lineWidth=S*.115;x.strokeStyle=out?col:dk(col,.22);x.stroke();
+      if(!out){x.lineWidth=S*.042;x.strokeStyle=lt(col,.22);x.stroke();}
+      x.restore();
+    }
+    if(tg)leg(tg.q,mut,true);
+    leg(st.q,acc,false);
+    /* residual limb / pelvis anchor */
+    if(true){const ch=carbon(acc);
+      shell(x,hx,hy-S*.46,S*.42,S*.62,0,ch,{r:.34,rim:true});
+      pivot(x,hx,hy,S*.13,acc,null);}
+  }},
+
+wrist:{
+  key:"wrist",name:"Powered wrist",sub:"Transradial, wrist unit",
+  joints:"flex/extend \u00b7 rotate",task:"Hold commanded orientations",
+  n:2,limits:[[-1.2,1.2],[-1.5,1.5]],rest:[0,0],
+  inertia:[.32,.40],damping:[.30,.34],stiff:[1.0,.8],gain:[4.6,5.0],
+  unit:"\u00b0",metricName:"orientation error",
+  tasks:[{s:3,lbl:"slow poses"},{s:11,lbl:"mixed poses"},{s:23,lbl:"fast switching"}],
+  obsDim:6,
+  target:function(t,tm){const i=Math.floor(tm/(t.s>15?1.4:2.2));
+    return {q:[(hash(i,t.s)*2-1)*1.0,(hash(i+41,t.s)*2-1)*1.25]};},
+  obs:function(d,st,tg){return [st.q[0],st.qd[0]*.25,tg.q[0]-st.q[0],
+                                st.q[1],st.qd[1]*.25,tg.q[1]-st.q[1]];},
+  reward:function(d,st,tg,a){const e=Math.abs(tg.q[0]-st.q[0])+Math.abs(tg.q[1]-st.q[1]);
+    return -e/2*2.4-.02*(a[0]*a[0]+a[1]*a[1])/2;},
+  metric:function(d,st,tg){return (Math.abs(tg.q[0]-st.q[0])+Math.abs(tg.q[1]-st.q[1]))/2*DEG;},
+  draw:function(x,w,h,st,tg,o){
+    const mut=css("--muted"),line=css("--line"),acc=o.col;
+    const cx=w*.44,cy=h*.50,S=Math.min(h*.30,w*.21);
+    const ch=carbon(acc);
+    /* forearm socket, fixed to the residual limb */
+    seg(x,cx-S*2.4,cy,cx-S*.62,cy,S*.74,S*.60,ch,{});
+    x.strokeStyle=dk(ch,.30);x.lineWidth=1.2;
+    for(const t of [.30,.55]){const px2=cx-S*2.4+(S*1.78)*t;
+      x.beginPath();x.moveTo(px2,cy-S*.30);x.lineTo(px2,cy+S*.30);x.stroke();}
+    function unit(q,col,out){
+      x.save();x.translate(cx,cy);x.rotate(q[0]);
+      /* powered rotator */
+      seg(x,-S*.62,0,-S*.06,0,S*.58,S*.52,out?col:dk(col,.20),{outline:out});
+      if(!out){const n=8;
+        for(let i=0;i<n;i++){const a=q[1]+i*6.2832/n;
+          const cxi=-S*.34,r=S*.24;
+          const yy=Math.cos(a)*r;
+          if(Math.sin(a)>0){x.strokeStyle=lt(col,.35);x.lineWidth=1.3;
+            x.beginPath();x.moveTo(cxi-S*.10,yy);x.lineTo(cxi+S*.10,yy);x.stroke();}}}
+      pivot(x,-S*.06,0,S*.14,col,{outline:out});
+      const pr=Math.abs(Math.cos(q[1]))*.70+.30;
+      x.save();x.translate(S*.04,0);x.rotate(1.5708);x.scale(pr,1);
+      mechHand(x,S*.80,[.42,.50,.50,.50,.50],col,{outline:out});
+      x.restore();x.restore();
+    }
+    if(tg){x.globalAlpha=.6;unit(tg.q,mut,true);x.globalAlpha=1;}
+    unit(st.q,acc,false);
+    const dx=w-58,dy=32;
+    x.strokeStyle=line;x.lineWidth=1;x.strokeRect(dx-30,dy-14,60,28);
+    x.fillStyle=mut;x.font='9px "IBM Plex Mono",monospace';x.textAlign="center";
+    x.fillText("ROTATION",dx,dy-19);
+    if(tg){x.strokeStyle=mut;x.lineWidth=2;x.beginPath();
+      x.moveTo(dx+tg.q[1]/1.5*26,dy-10);x.lineTo(dx+tg.q[1]/1.5*26,dy+10);x.stroke();}
+    x.strokeStyle=acc;x.lineWidth=3;x.beginPath();
+    x.moveTo(dx+st.q[1]/1.5*26,dy-8);x.lineTo(dx+st.q[1]/1.5*26,dy+8);x.stroke();
+    x.textAlign="left";
+  }},
+
+arm:{
+  key:"arm",name:"Full arm",sub:"Transhumeral amputation",
+  joints:"shoulder \u00b7 elbow \u00b7 wrist",task:"Reach targets in the workspace",
+  n:3,limits:[[-1.4,1.5],[-2.3,.05],[-1.2,1.2]],rest:[.35,-.9,0],
+  inertia:[1.5,.75,.28],damping:[.65,.45,.26],stiff:[.9,.9,1.1],gain:[9,7.5,4],
+  unit:"cm",metricName:"reach error",
+  L:[.30,.26,.11],
+  tasks:[{s:5,lbl:"near targets"},{s:17,lbl:"wide targets"},{s:29,lbl:"rapid targets"}],
+  obsDim:11,
+  fk:function(d,q){const a1=q[0],a2=q[0]+q[1],a3=a2+q[2];
+    const L=d.L;return {x:L[0]*Math.cos(a1)+L[1]*Math.cos(a2)+L[2]*Math.cos(a3),
+                        y:L[0]*Math.sin(a1)+L[1]*Math.sin(a2)+L[2]*Math.sin(a3),
+                        j:[{x:L[0]*Math.cos(a1),y:L[0]*Math.sin(a1)},
+                           {x:L[0]*Math.cos(a1)+L[1]*Math.cos(a2),y:L[0]*Math.sin(a1)+L[1]*Math.sin(a2)}]};},
+  target:function(t,tm){const i=Math.floor(tm/(t.s>25?1.5:2.4));
+    /* min reachable radius is 28cm (elbow limit) - targets start at 31cm */
+    const r=.31+hash(i,t.s)*(t.s>10?.27:.15),th=(hash(i+7,t.s)*1.6-.72);
+    return {pt:{x:r*Math.cos(th),y:r*Math.sin(th)}};},
+  obs:function(d,st,tg){const e=d.fk(d,st.q);
+    return [st.q[0],st.q[1],st.q[2],st.qd[0]*.2,st.qd[1]*.2,st.qd[2]*.2,
+            (tg.pt.x-e.x)*3,(tg.pt.y-e.y)*3,e.x*2,e.y*2,
+            Math.hypot(tg.pt.x-e.x,tg.pt.y-e.y)*3];},
+  reward:function(d,st,tg,a){const e=d.fk(d,st.q);
+    const dd=Math.hypot(tg.pt.x-e.x,tg.pt.y-e.y);
+    return -dd*4.5-.02*(a[0]*a[0]+a[1]*a[1]+a[2]*a[2])/3;},
+  metric:function(d,st,tg){const e=d.fk(d,st.q);
+    return Math.hypot(tg.pt.x-e.x,tg.pt.y-e.y)*100;},
+  draw:function(x,w,h,st,tg,o){
+    const mut=css("--muted"),acc=o.col,dev=this;
+    const sx=w*.21,sy=h*.58,S=Math.min(h*.95,w*.62);
+    const P=p=>({x:sx+p.x*S,y:sy-p.y*S});
+    if(tg){const t=P(tg.pt);
+      x.strokeStyle=mut;x.lineWidth=1.6;x.setLineDash([4,4]);
+      x.beginPath();x.arc(t.x,t.y,13,0,6.2832);x.stroke();x.setLineDash([]);
+      dot(x,t.x,t.y,3.5,mut);}
+    const ch=carbon(acc);
+    /* shoulder socket / harness anchor */
+    shell(x,sx-S*.02,sy,S*.085,S*.24,0,ch,{r:.30,rim:true});
+    const e=dev.fk(dev,st.q),j=e.j.map(P),ee=P(e);
+    seg(x,sx,sy,j[0].x,j[0].y,S*.090,S*.068,acc,{bolts:true});
+    /* elbow: hinge yoke plus pivot */
+    shell(x,j[0].x,j[0].y,S*.095,S*.082,Math.atan2(j[1].y-j[0].y,j[1].x-j[0].x),dk(ch,.05),{r:.36});
+    pivot(x,j[0].x,j[0].y,S*.042,acc,null);
+    seg(x,j[0].x,j[0].y,j[1].x,j[1].y,S*.074,S*.052,acc,{bolts:true});
+    /* wrist rotator */
+    const aw=Math.atan2(ee.y-j[1].y,ee.x-j[1].x);
+    shell(x,j[1].x,j[1].y,S*.070,S*.060,aw,dk(ch,.05),{r:.42});
+    pivot(x,j[1].x,j[1].y,S*.032,acc,null);
+    seg(x,j[1].x,j[1].y,ee.x,ee.y,S*.052,S*.044,acc,{});
+    /* terminal device: two-jaw gripper */
+    const gl=S*.062;
+    for(const s of [-1,1]){
+      const g1x=ee.x+gl*.55*Math.cos(aw+s*.30),g1y=ee.y+gl*.55*Math.sin(aw+s*.30);
+      const g2x=g1x+gl*.75*Math.cos(aw+s*.95),g2y=g1y+gl*.75*Math.sin(aw+s*.95);
+      seg(x,ee.x,ee.y,g1x,g1y,S*.030,S*.024,acc,{});
+      seg(x,g1x,g1y,g2x,g2y,S*.024,S*.017,acc,{});
+    }
+    pivot(x,ee.x,ee.y,S*.030,acc,null);
+    if(tg){const t=P(tg.pt);
+      x.strokeStyle=acc;x.globalAlpha=.32;x.lineWidth=1;x.setLineDash([2,3]);
+      x.beginPath();x.moveTo(ee.x,ee.y);x.lineTo(t.x,t.y);x.stroke();
+      x.setLineDash([]);x.globalAlpha=1;}
+  }},
+
+hand:{
+  key:"hand",name:"Multi-grip hand",sub:"Transradial, 5-digit hand",
+  joints:"5 digits",task:"Expand 2 muscle signals into 5 coordinated digits",
+  n:5,limits:[[-.15,1.5],[-.15,1.6],[-.15,1.6],[-.15,1.6],[-.15,1.6]],
+  rest:[.05,.05,.05,.05,.05],
+  inertia:[.16,.14,.14,.13,.12],damping:[.22,.20,.20,.19,.18],
+  stiff:[1.4,1.4,1.4,1.4,1.4],gain:[3.4,3.2,3.2,3.1,3.0],
+  unit:"\u00b0",metricName:"grasp posture error",
+  A:[.55,1.05,1.10,1.00,.92],B:[.62,-.30,-.10,.28,.52],C:[.30,.35,.35,.33,.32],
+  tasks:[{s:2,lbl:"power grips"},{s:13,lbl:"precision grips"},{s:31,lbl:"mixed grips"}],
+  obsDim:12,
+  synergy:function(d,u){const q=[];
+    for(let i=0;i<5;i++)q.push(clamp(d.C[i]+d.A[i]*u[0]+d.B[i]*u[1],-.1,1.5));
+    return q;},
+  target:function(t,tm){const i=Math.floor(tm/2.0);
+    const u=[hash(i,t.s)*1.0,(hash(i+19,t.s)*2-1)*(t.s>10?.75:.35)];
+    return {u:u,q:this.synergy(this,u)};},
+  obs:function(d,st,tg){const o=[];
+    for(let i=0;i<5;i++)o.push(st.q[i],st.qd[i]*.2);
+    o.push(tg.u[0]*1.5,tg.u[1]*1.5);return o;},
+  reward:function(d,st,tg,a){let e=0,u=0;
+    for(let i=0;i<5;i++){e+=Math.abs(tg.q[i]-st.q[i]);u+=a[i]*a[i];}
+    return -e/5*2.6-.02*u/5;},
+  metric:function(d,st,tg){let e=0;for(let i=0;i<5;i++)e+=Math.abs(tg.q[i]-st.q[i]);
+    return e/5*DEG;},
+  draw:function(x,w,h,st,tg,o){
+    const mut=css("--muted"),acc=o.col;
+    const S=Math.min(h*.26,w*.20),cx=w*.50,cy=h*.66;
+    x.save();x.translate(cx,cy);
+    if(tg){x.globalAlpha=.62;mechHand(x,S,tg.q,mut,{outline:true});x.globalAlpha=1;}
+    mechHand(x,S,st.q,acc,null);
+    x.restore();
+    if(tg){/* bottom-left, clear of the stage label overlaid on the canvas */
+      const by=h-34;
+      x.fillStyle=mut;x.font='9px "IBM Plex Mono",monospace';
+      x.fillText("SIGNAL 1",12,by+7);x.fillText("SIGNAL 2",12,by+25);
+      for(let k=0;k<2;k++){const v=k===0?tg.u[0]:(tg.u[1]+1)/2;
+        x.fillStyle=css("--grid");x.fillRect(72,by+k*18,64,8);
+        x.fillStyle=acc;x.fillRect(72,by+k*18,64*clamp(v,0,1),8);}
+    }
+  }}
+};
+const ORDER=["hand","arm","leg","wrist"];
+
+/* ---------- user-drive configuration per device ---------- */
+DEVICES.leg.inputs=[{k:"cadence",lbl:"Walking speed",min:.40,max:1.20,step:.01,val:.75,
+  fmt:v=>(v*60).toFixed(0)+" steps/min"}];
+DEVICES.leg.userTarget=function(d,v,t){return d.target({f:v[0]},t);};
+DEVICES.leg.tol=9;
+
+DEVICES.wrist.inputs=[
+  {k:"flex",lbl:"Flex / extend command",min:-1.1,max:1.1,step:.01,val:0,fmt:v=>(v*DEG).toFixed(0)+"\u00b0"},
+  {k:"rot",lbl:"Rotation command",min:-1.4,max:1.4,step:.01,val:0,fmt:v=>(v*DEG).toFixed(0)+"\u00b0"}];
+DEVICES.wrist.userTarget=function(d,v,t){return {q:[v[0],v[1]]};};
+DEVICES.wrist.tol=9;
+
+DEVICES.arm.inputs=[
+  {k:"reach",lbl:"Reach distance",min:.31,max:.60,step:.005,val:.42,fmt:v=>(v*100).toFixed(0)+" cm"},
+  {k:"height",lbl:"Target height",min:-.72,max:.88,step:.01,val:.2,fmt:v=>(v*DEG).toFixed(0)+"\u00b0"}];
+DEVICES.arm.userTarget=function(d,v,t){return {pt:{x:v[0]*Math.cos(v[1]),y:v[0]*Math.sin(v[1])}};};
+DEVICES.arm.tol=4;
+
+DEVICES.hand.inputs=[
+  {k:"u1",lbl:"Muscle signal 1 \u2014 grip strength",min:0,max:1,step:.01,val:.2,fmt:v=>(v*100).toFixed(0)+"%"},
+  {k:"u2",lbl:"Muscle signal 2 \u2014 grip shape",min:-.8,max:.8,step:.01,val:0,
+   fmt:v=>v<-.25?"precision":(v>.25?"power":"neutral")}];
+DEVICES.hand.userTarget=function(d,v,t){return {u:[v[0],v[1]],q:d.synergy(d,[v[0],v[1]])};};
+DEVICES.hand.tol=9;
+
+/* ================= state ================= */
+const S={dev:null,step:1,cem:null,base:{},trained:{},baseErr:{},bestErr:{},
+  training:false,done:{},gens:70,previewTask:0,pre:null,post:null,
+  score:{pre:{e:0,h:0,n:0},post:{e:0,h:0,n:0}},inputs:[]};
+
+function baselineFor(d){
+  const rng=mulberry32(1234+d.n*97+d.key.length*31);
+  const dim=d.n*(d.obsDim+1),W=new Float64Array(dim);
+  for(let i=0;i<dim;i++)W[i]=gauss(rng)*0.65;
+  return W;
+}
+function evalW(d,W){let e=0;for(const t of d.tasks)e+=rollout(d,W,t,EP).E;return e/d.tasks.length;}
+
+/* ================= CEM trainer ================= */
+function CEM(d,seed){
+  this.d=d;this.rng=mulberry32(seed);this.dim=d.n*(d.obsDim+1);
+  this.mean=new Float64Array(this.dim);this.std=new Float64Array(this.dim).fill(.65);
+  this.pop=50;this.el=10;this.gen=0;this.best=null;this.bestR=-1e9;this.bestE=1e9;this.hist=[];
+}
+CEM.prototype.sample=function(){const w=new Float64Array(this.dim);
+  for(let i=0;i<this.dim;i++)w[i]=this.mean[i]+this.std[i]*gauss(this.rng);return w;};
+CEM.prototype.step=function(){
+  const d=this.d,cands=[];
+  for(let p=0;p<this.pop;p++){
+    const w=this.sample();let R=0;
+    for(const t of d.tasks)R+=rollout(d,w,t,EP).R;
+    cands.push({w:w,R:R/d.tasks.length});
+  }
+  cands.sort((a,b)=>b.R-a.R);
+  const el=cands.slice(0,this.el);
+  for(let i=0;i<this.dim;i++){
+    let m=0;for(const c of el)m+=c.w[i];m/=el.length;
+    let v=0;for(const c of el)v+=(c.w[i]-m)*(c.w[i]-m);
+    this.mean[i]=m;this.std[i]=Math.max(Math.sqrt(v/el.length),.05)+.20*Math.exp(-this.gen/22);
+  }
+  let R=0,E=0;const per=[];
+  for(const t of d.tasks){const r=rollout(d,this.mean,t,EP);R+=r.R;E+=r.E;per.push(r.E);}
+  R/=d.tasks.length;E/=d.tasks.length;
+  if(R>this.bestR){this.bestR=R;this.bestE=E;this.best=Float64Array.from(this.mean);}
+  this.gen++;this.hist.push({g:this.gen,R:R,E:E,per:per});
+  return this.hist[this.hist.length-1];
+};
+
+/* ================= slice 1 : device picker ================= */
+const cards={};
+function buildCards(){
+  const g=$("devGrid");g.innerHTML="";
+  ORDER.forEach(function(k){
+    const d=DEVICES[k];
+    const b=document.createElement("button");
+    b.className="dev";b.setAttribute("aria-pressed","false");
+    b.innerHTML='<canvas></canvas><div class="devbody"><div class="devname">'+d.name+
+      '</div><div class="devsub">'+d.sub+'</div><div class="devmeta"><span>'+d.n+
+      ' joints</span><span>'+d.joints+'</span></div><div class="devmeta" style="margin-top:6px">'+
+      d.task+'</div></div>';
+    b.onclick=function(){select(k);};
+    g.appendChild(b);
+    cards[k]={btn:b,cv:b.querySelector("canvas"),st:makeState(d),task:d.tasks[1]};
+  });
+}
+function select(k){
+  S.dev=k;
+  ORDER.forEach(function(o){cards[o].btn.setAttribute("aria-pressed",String(o===k));});
+  $("toTrain").disabled=false;$("nav2").disabled=false;
+  $("hdrDev").textContent=DEVICES[k].name;
+  const d=DEVICES[k];
+  if(!S.base[k]){S.base[k]=baselineFor(d);S.baseErr[k]=evalW(d,S.base[k]);}
+  if(!S.cemFor)S.cemFor={};
+  if(!S.cemFor[k])S.cemFor[k]=null;
+  prepTraining();
+}
+function pickRandom(){select(ORDER[Math.floor(Math.random()*ORDER.length)]);}
+
+/* ================= navigation ================= */
+function go(n){
+  if(n===2&&!S.dev)return;
+  if(n===3&&!S.done[S.dev])return;
+  S.step=n;
+  $("s1").hidden=n!==1;$("s2").hidden=n!==2;$("s3").hidden=n!==3;
+  [1,2,3].forEach(function(i){$("nav"+i).setAttribute("aria-current",String(i===n));});
+  if(n===2)prepTraining();
+  if(n===3)prepTest();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ================= slice 2 : training ================= */
+let preview=null,trainAcc=0,TICK=85;
+function prepTraining(){
+  const k=S.dev;if(!k)return;const d=DEVICES[k];
+  $("trainLead").innerHTML="Your <b>"+d.name.toLowerCase()+"</b> ships with a randomly initialised "+
+    "controller \u2014 it has no idea which muscle pattern should produce which movement. Press start "+
+    "and a policy-search algorithm will try "+(50*d.tasks.length)+" simulated attempts per generation, "+
+    "keep the best, and repeat. Watch the ghost (commanded posture) and the solid limb (what the "+
+    "controller actually does) converge.";
+  $("algoNote").innerHTML="Algorithm: cross-entropy method policy search over a linear controller ("+
+    d.n+" outputs \u00d7 "+(d.obsDim+1)+" inputs = "+(d.n*(d.obsDim+1))+" parameters). Every generation "+
+    "samples 50 candidate controllers, scores each on "+d.tasks.length+" test scenarios \u00d7 "+EP+
+    " simulation steps, and refits the search distribution to the top 10. This runs in your browser, "+
+    "right now \u2014 nothing is pre-recorded.";
+  $("kBaseL").textContent="baseline "+(d.unit==="cm"?"error":"error");
+  $("kNowL").textContent="current error";
+  $("kBase").textContent=S.baseErr[k].toFixed(1)+d.unit;
+  const cem=S.cemFor[k];
+  $("kNow").textContent=cem&&cem.gen?cem.hist[cem.hist.length-1].E.toFixed(1)+d.unit:"\u2013";
+  $("kGen").textContent=cem?cem.gen:0;
+  $("kImp").textContent=cem&&cem.gen?impPct(k)+"%":"0%";
+  $("trainBar").style.width=(cem?cem.gen/S.gens*100:0)+"%";
+  $("btnTrain").textContent=S.done[k]?"Train again":(S.training?"Pause":"Start training");
+  $("toTest").disabled=!S.done[k];$("nav3").disabled=!S.done[k];
+  $("trainStatus").textContent=S.done[k]?"Training complete \u2014 controller ready to drive.":
+    "Untrained controller loaded.";
+  $("liveTag").textContent=cem&&cem.gen?"generation "+cem.gen:"untrained policy";
+  buildTaskBars();drawChart();
+  preview={st:makeState(d),task:d.tasks[0],ti:0,k:0};
+  if(!cem)$("log").innerHTML="";
+}
+function impPct(k){const cem=S.cemFor[k];if(!cem||!cem.gen)return 0;
+  const b=S.baseErr[k],e=cem.hist[cem.hist.length-1].E;
+  return Math.max(0,Math.round((b-e)/b*100));}
+function buildTaskBars(){
+  const d=DEVICES[S.dev],cem=S.cemFor[S.dev],box=$("taskBars");box.innerHTML="";
+  d.tasks.forEach(function(t,i){
+    const row=document.createElement("div");row.className="taskrow";
+    const e=cem&&cem.gen?cem.hist[cem.hist.length-1].per[i]:null;
+    const b=S.baseErr[S.dev];
+    const pct=e===null?0:clamp((1-e/(b*1.15))*100,0,100);
+    row.innerHTML='<span class="tn">'+t.lbl+'</span><span class="tbar"><i class="'+
+      (e===null?"pre":"")+'" style="width:'+(e===null?8:pct)+'%"></i></span>'+
+      '<span class="tv">'+(e===null?"\u2014":e.toFixed(1)+d.unit)+'</span>';
+    box.appendChild(row);
+  });
+}
+function drawChart(){
+  const c=$("chart"),o=fit(c),x=o.x,w=o.w,h=o.h;
+  const d=DEVICES[S.dev],cem=S.cemFor[S.dev];
+  x.clearRect(0,0,w,h);
+  const pad={l:38,r:10,t:16,b:20};
+  const base=S.baseErr[S.dev]||1;
+  let mx=base*1.12;
+  if(cem)cem.hist.forEach(function(p){if(p.E>mx)mx=p.E*1.05;});
+  x.strokeStyle=css("--grid");x.lineWidth=1;
+  x.fillStyle=css("--muted");x.font='9px "IBM Plex Mono",monospace';
+  for(let i=0;i<=3;i++){
+    const y=pad.t+(h-pad.t-pad.b)*i/3;
+    x.beginPath();x.moveTo(pad.l,y);x.lineTo(w-pad.r,y);x.stroke();
+    x.textAlign="right";x.fillText((mx*(1-i/3)).toFixed(0),pad.l-5,y+3);
+  }
+  x.textAlign="left";x.fillText("generation",pad.l,h-6);
+  x.textAlign="right";x.fillText(d.metricName+" ("+d.unit+")",w-pad.r,h-6);
+  const X=g=>pad.l+(w-pad.l-pad.r)*(g/S.gens);
+  const Y=e=>pad.t+(h-pad.t-pad.b)*(1-clamp(e/mx,0,1));
+  x.strokeStyle=css("--pre");x.setLineDash([5,4]);x.lineWidth=1.5;
+  x.beginPath();x.moveTo(pad.l,Y(base));x.lineTo(w-pad.r,Y(base));x.stroke();x.setLineDash([]);
+  x.fillStyle=css("--pre");x.textAlign="left";x.fillText("before training",pad.l+4,Y(base)-5);
+  if(cem&&cem.hist.length){
+    x.strokeStyle=css("--accent");x.lineWidth=2;x.beginPath();
+    cem.hist.forEach(function(p,i){const px=X(p.g),py=Y(p.E);i?x.lineTo(px,py):x.moveTo(px,py);});
+    x.stroke();
+    const last=cem.hist[cem.hist.length-1];
+    dot(x,X(last.g),Y(last.E),3.5,css("--accent"));
+  }
+}
+function logLine(html){const l=$("log");l.insertAdjacentHTML("afterbegin",html+"<br>");
+  if(l.childNodes.length>90)l.removeChild(l.lastChild);}
+
+function toggleTrain(){
+  const k=S.dev;if(!k)return;
+  if(S.training){S.training=false;$("btnTrain").textContent="Resume";
+    $("trainStatus").textContent="Paused at generation "+(S.cemFor[k]?S.cemFor[k].gen:0)+".";return;}
+  if(S.done[k]||!S.cemFor[k]){
+    S.cemFor[k]=new CEM(DEVICES[k],9137+k.length*13);S.done[k]=false;
+    $("log").innerHTML="";$("toTest").disabled=true;$("nav3").disabled=true;
+    logLine('<b>init</b> random controller \u2014 baseline '+S.baseErr[k].toFixed(1)+DEVICES[k].unit);
+  }
+  S.training=true;$("btnTrain").textContent="Pause";
+  $("trainStatus").textContent="Training\u2026";
+  trainAcc=0;
+}
+function resetTraining(){
+  const k=S.dev;if(!k)return;
+  S.training=false;S.cemFor[k]=null;S.done[k]=false;S.trained[k]=null;
+  prepTraining();$("log").innerHTML="";
+}
+function trainStep(){
+  const k=S.dev,d=DEVICES[k],cem=S.cemFor[k];
+  const r=cem.step();
+  $("kGen").textContent=cem.gen;
+  $("kNow").textContent=r.E.toFixed(1)+d.unit;
+  $("kImp").textContent=impPct(k)+"%";
+  $("trainBar").style.width=(cem.gen/S.gens*100)+"%";
+  $("liveTag").textContent="generation "+cem.gen;
+  buildTaskBars();drawChart();
+  if(cem.gen%5===0||cem.gen===1)
+    logLine('<b>gen '+String(cem.gen).padStart(2,"0")+'</b>  error '+r.E.toFixed(1)+d.unit+
+      '   reward '+r.R.toFixed(3)+'   '+d.tasks.map(function(t,i){
+        return t.lbl.split(" ")[0]+" "+r.per[i].toFixed(0);}).join("  "));
+  if(cem.gen>=S.gens){
+    S.training=false;S.done[k]=true;
+    S.trained[k]=cem.bestE<r.E?cem.best:Float64Array.from(cem.mean);
+    S.bestErr[k]=Math.min(cem.bestE,r.E);
+    $("btnTrain").textContent="Train again";
+    $("trainStatus").textContent="Done \u2014 "+impPct(k)+"% lower error than the untrained controller.";
+    $("toTest").disabled=false;$("nav3").disabled=false;
+    logLine('<b>done</b> '+S.baseErr[k].toFixed(1)+d.unit+' &rarr; '+S.bestErr[k].toFixed(1)+d.unit+
+      '  ('+impPct(k)+'% better)');
+  }
+}
+function curPolicy(){const cem=S.cemFor[S.dev];
+  if(S.done[S.dev]&&S.trained[S.dev])return S.trained[S.dev];
+  if(cem&&cem.gen)return cem.mean;return S.base[S.dev];}
+function stepPreview(){
+  const d=DEVICES[S.dev];if(!preview)return;
+  const tg=d.target(preview.task,preview.st.t);
+  stepSim(d,preview.st,act(curPolicy(),d.obs(d,preview.st,tg),d.n));
+  preview.k++;
+  if(preview.k>EP){preview.k=0;preview.ti=(preview.ti+1)%d.tasks.length;
+    preview.task=d.tasks[preview.ti];preview.st=makeState(d);}
+  const c=$("trainCanvas"),o=fit(c);o.x.clearRect(0,0,o.w,o.h);
+  d.draw(o.x,o.w,o.h,preview.st,d.target(preview.task,preview.st.t),
+    {col:S.cemFor[S.dev]&&S.cemFor[S.dev].gen?css("--accent"):css("--pre")});
+  o.x.fillStyle=css("--muted");o.x.font='10px "IBM Plex Mono",monospace';
+  o.x.textAlign="right";o.x.fillText("scenario: "+preview.task.lbl,o.w-10,o.h-10);o.x.textAlign="left";
+}
+
+/* ================= slice 3 : test drive ================= */
+function prepTest(){
+  const d=DEVICES[S.dev];
+  $("testLead").innerHTML="You are now the user. The sliders are your <b>intent</b> \u2014 the command "+
+    "your residual muscles send. Both devices below receive it simultaneously: on the left the "+
+    "controller you started with, on the right the one you just trained. Ghost outline = what you "+
+    "asked for, solid = what the device did.";
+  const box=$("testInputs");box.innerHTML="";S.inputs=[];
+  d.inputs.forEach(function(inp,i){
+    const wrap=document.createElement("div");wrap.className="sl";
+    wrap.innerHTML='<label for="in'+i+'">'+inp.lbl+' <b id="inv'+i+'">'+inp.fmt(inp.val)+
+      '</b></label><input type="range" id="in'+i+'" min="'+inp.min+'" max="'+inp.max+
+      '" step="'+inp.step+'" value="'+inp.val+'">';
+    box.appendChild(wrap);
+    S.inputs.push(inp.val);
+    const el=wrap.querySelector("input");
+    el.addEventListener("input",function(){
+      S.inputs[i]=parseFloat(el.value);
+      document.getElementById("inv"+i).textContent=inp.fmt(S.inputs[i]);
+    });
+  });
+  S.pre={st:makeState(d),t:0};S.post={st:makeState(d),t:0};
+  resetScore();
+}
+function resetScore(){S.score={pre:{e:0,h:0,n:0},post:{e:0,h:0,n:0}};
+  if(S.dev){const d=DEVICES[S.dev];S.pre={st:makeState(d),t:0};S.post={st:makeState(d),t:0};}}
+function stepTest(){
+  const d=DEVICES[S.dev];if(!S.pre||!S.post)return;
+  const tg=d.userTarget(d,S.inputs,S.pre.t);
+  [["pre",S.base[S.dev],S.pre],["post",S.trained[S.dev]||S.base[S.dev],S.post]]
+  .forEach(function(row){
+    const key=row[0],W=row[1],sim=row[2];
+    stepSim(d,sim.st,act(W,d.obs(d,sim.st,tg),d.n));
+    sim.t+=DT;
+    const e=d.metric(d,sim.st,tg);
+    const sc=S.score[key];sc.e+=e;sc.n++;if(e<d.tol)sc.h++;
+    const c=$(key+"Canvas"),o=fit(c);o.x.clearRect(0,0,o.w,o.h);
+    d.draw(o.x,o.w,o.h,sim.st,tg,{col:key==="pre"?css("--pre"):css("--accent")});
+    $(key+"Err").textContent=e.toFixed(1)+d.unit;
+    $(key+"Hit").textContent=sc.n?Math.round(sc.h/sc.n*100)+"%":"\u2013";
+    $(key+"Score").textContent=sc.n?(sc.e/sc.n).toFixed(1)+d.unit+" avg":"\u2013";
+  });
+  const a=S.score.pre,b=S.score.post;
+  if(a.n>25){
+    const ea=a.e/a.n,eb=b.e/b.n,imp=Math.round((ea-eb)/ea*100);
+    $("verdict").innerHTML="Same commands, same device, "+ (a.n*DT).toFixed(0) +
+      "s of driving: the untrained controller averages <b>"+ea.toFixed(1)+d.unit+
+      "</b> of error and is on target <b>"+Math.round(a.h/a.n*100)+"%</b> of the time. "+
+      "The trained one averages <b>"+eb.toFixed(1)+d.unit+"</b> and holds target <b>"+
+      Math.round(b.h/b.n*100)+"%</b> \u2014 <b>"+(imp>=0?imp:0)+"% less error</b>.";
+  }
+}
+
+/* ================= card previews ================= */
+function stepCards(){
+  ORDER.forEach(function(k){
+    const d=DEVICES[k],c=cards[k];
+    c.st.t+=DT;
+    const tg=d.target(c.task,c.st.t);
+    if(tg.q)for(let i=0;i<d.n;i++)c.st.q[i]+=(tg.q[i]-c.st.q[i])*.22;
+    else{const cur=c.st.q;const e=d.fk(d,cur);
+      for(let i=0;i<d.n;i++)c.st.q[i]+=(Math.atan2(tg.pt.y,tg.pt.x)*(i===0?.5:0)+
+        (i===1?-1.0:(i===2?.3:0))-c.st.q[i])*.06+
+        (tg.pt.x-e.x)*(i===0?.15:.25)+(tg.pt.y-e.y)*(i===0?.35:-.15);}
+    const o=fit(c.cv);o.x.clearRect(0,0,o.w,o.h);
+    d.draw(o.x,o.w,o.h,c.st,tg,{col:S.dev===k?css("--accent"):css("--muted")});
+  });
+}
+
+/* ================= main loop ================= */
+let last=performance.now();
+function frame(now){
+  const dtms=now-last;last=now;
+  try{
+    if(S.step===1)stepCards();
+    else if(S.step===2){
+      stepPreview();
+      if(S.training&&S.cemFor[S.dev]){
+        trainAcc+=dtms;
+        if(trainAcc>=TICK){trainAcc=0;trainStep();}
+      }
+    }
+    else if(S.step===3)stepTest();
+  }catch(err){console.error(err);}
+  requestAnimationFrame(frame);
+}
+
+/* ================= init ================= */
+buildCards();
+select("hand");
+go(1);
+requestAnimationFrame(frame);
+window.addEventListener("resize",function(){if(S.step===2)drawChart();});
+
+return {go:go,pickRandom:pickRandom,toggleTrain:toggleTrain,resetTraining:resetTraining,
+        resetScore:resetScore,_S:S,_D:DEVICES,_ev:evalW,_roll:rollout};
+})();
+</script>
+</body>
+</html>
